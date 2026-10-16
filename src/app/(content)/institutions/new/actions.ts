@@ -116,6 +116,9 @@ const ALREADY_RUNNING = "이미 처리 중인 기관입니다. 잠시 뒤 결과
 
 const LIMIT_MESSAGE = `오늘 등록 한도(${DAILY_REGISTRATION_LIMIT}곳)를 모두 사용했습니다. 내일 0시(한국시간) 이후에 다시 등록할 수 있습니다.`;
 
+// 서비스 전체 하루 등록 한도(DB 규칙 SERVICE_LIMIT, 200곳)에 도달했을 때. 계정별 한도 문구(DAILY_LIMIT)와 구분해서 안내한다.
+const SERVICE_LIMIT_MESSAGE = "오늘은 서비스 전체 등록 한도에 도달했습니다. 내일 0시(한국시간) 이후에 다시 등록해 주세요.";
+
 // 1단계: 검사 → 기관 접수 → (PDF면) 업로드 주소 발급
 export async function prepareRegistration(input: RegistrationInput): Promise<RegistrationResult> {
   const user = await requireUser();
@@ -159,6 +162,7 @@ export async function prepareRegistration(input: RegistrationInput): Promise<Reg
   const { error: usageError } = await supabase.from("usage_log").insert({});
   if (usageError) {
     await supabase.from("institutions").delete().eq("id", institution.id);
+    if (usageError.message?.includes("SERVICE_LIMIT")) return { status: "error", message: SERVICE_LIMIT_MESSAGE };
     if (usageError.message?.includes("DAILY_LIMIT")) return { status: "error", message: LIMIT_MESSAGE };
     return { status: "error", message: "등록 중 문제가 생겼습니다. 잠시 뒤 다시 시도해 주세요." };
   }
