@@ -1,0 +1,14 @@
+# Vercel 배포로 올리지 않을 파일. (.gitignore와 별개로 Vercel CLI가 따로 읽는다)
+# 비밀 값 파일은 절대 올리지 않는다. 서버에 필요한 값은 Vercel 환경변수(OPENAI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY)로만 등록한다.
+.env
+.env.*
+.vercel
+.git
+.bkit
+.claude
+trash-can
+supabase/.temp
+node_modules
+.next
+*.tsbuildinfo
+.DS_Store
