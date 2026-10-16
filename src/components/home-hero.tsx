@@ -45,6 +45,10 @@ export function HomeHero() {
             </Link>
           </div>
 
+          <p className="animate-fade-up mt-5 text-sm text-muted [animation-delay:0.47s]">
+            로그인 없이 바로 써 볼 수 있어요. 게스트로 쓰면 브라우저를 닫을 때 자료가 사라집니다.
+          </p>
+
           <ul className="animate-fade-up mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-foreground/80 [animation-delay:0.54s]">
             {TRUST.map((text) => (
               <li key={text} className="flex items-center gap-2">

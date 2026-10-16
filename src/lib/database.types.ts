@@ -262,6 +262,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_guests: { Args: never; Returns: number }
       login_is_blocked: { Args: { p_email_hash: string }; Returns: boolean }
       login_record_failure: {
         Args: { p_email_hash: string }

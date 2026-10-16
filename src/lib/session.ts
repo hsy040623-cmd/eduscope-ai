@@ -8,7 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 // Design Ref: §3.3·§5.3 — 요청마다 서버가 "누구인지" 확인한다. 쿠키를 읽으므로 반드시 <Suspense> 안에서 호출한다. (cacheComponents)
 // Plan SC: 작업 6 — 로그인 전·후 구분, 로그인하지 않으면 접근 막기
 
-export type CurrentUser = { id: string; email: string };
+export type CurrentUser = { id: string; email: string; isGuest: boolean }; // isGuest: 로그인 없이 시작한 임시(게스트) 계정
 
 // getUser는 쿠키 내용을 믿지 않고 Supabase 서버에 다시 물어 확인한다. 같은 요청 안에서는 한 번만 묻는다.
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
@@ -18,7 +18,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;
-  return { id: data.user.id, email: data.user.email ?? "" };
+  return { id: data.user.id, email: data.user.email ?? "", isGuest: data.user.user_metadata?.guest === true };
 });
 
 export async function getCurrentUserEmail(): Promise<string | null> {

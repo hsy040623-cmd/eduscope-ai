@@ -1,7 +1,9 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { GUEST_COOKIE } from "@/lib/supabase/cookie-options";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Design Ref: §3.3 — 이메일·비밀번호 회원가입. 이메일 확인 메일은 끄고(실습용) 가입하면 바로 로그인된다.
@@ -52,7 +54,8 @@ export async function signUp(_previous: SignupState, formData: FormData): Promis
     return { status: "error", fieldErrors, email: rawEmail };
   }
 
-  const supabase = await createSupabaseServerClient({ forwardClientIp: true });
+  // persistent: 게스트 상태에서 가입해도 계속 보관되는 로그인 쿠키로 만든다.
+  const supabase = await createSupabaseServerClient({ forwardClientIp: true, persistent: true });
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -77,7 +80,10 @@ export async function signUp(_previous: SignupState, formData: FormData): Promis
   }
 
   // 이메일 확인을 끈 설정이라 가입하면 바로 로그인 상태(쿠키)가 된다. 홈으로 보낸다.
-  if (data.session) redirect("/");
+  if (data.session) {
+    (await cookies()).delete(GUEST_COOKIE); // 이제 게스트가 아니다
+    redirect("/");
+  }
 
   // 이메일 확인이 켜져 있으면 로그인 상태가 아니므로, 안내만 보여 준다.
   return { status: "success" };

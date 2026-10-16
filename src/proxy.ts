@@ -1,11 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { serverEnv } from "@/lib/env";
-import { hardenCookieOptions } from "@/lib/supabase/cookie-options";
+import { GUEST_COOKIE, hardenCookieOptions } from "@/lib/supabase/cookie-options";
 
-// Design Ref: §2.1·§5.3 — 로그인하지 않은 사람은 로그인·회원가입 화면만 볼 수 있다. 로그인한 사람이 그 화면에 오면 홈으로 보낸다.
+// Design Ref: §2.1·§5.3 — 홈과 게스트 시작 주소는 로그인 없이 볼 수 있다. 그 밖의 화면에 로그인 없이 오면 "게스트로 시작"으로 보낸다.
+// (게스트 = 로그인 없이 시작한 임시 계정. 브라우저를 닫으면 사라진다.) 로그인한 일반 사용자가 로그인·가입 화면에 오면 홈으로 보낸다. 게스트는 로그인·가입 화면에 올 수 있다.
 // Plan SC: 작업 6 — 로그인하지 않으면 접근 막기 (여기는 빠른 1차 확인이고, 화면 코드에서도 requireUser()로 한 번 더 확인한다)
-const PUBLIC_PATHS = ["/login", "/signup"];
+const AUTH_PATHS = ["/login", "/signup"];
+const OPEN_PATHS = ["/", "/guest/start"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -16,11 +18,12 @@ export async function proxy(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        // 로그인 시간이 지나 갱신된 쿠키를 이후 처리와 브라우저 양쪽에 전달한다.
+        // 로그인 시간이 지나 갱신된 쿠키를 이후 처리와 브라우저 양쪽에 전달한다. 게스트의 쿠키는 계속 세션 쿠키로 둔다.
+        const sessionOnly = request.cookies.has(GUEST_COOKIE);
         for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
         response = NextResponse.next({ request });
         for (const { name, value, options } of cookiesToSet) {
-          response.cookies.set(name, value, hardenCookieOptions(options));
+          response.cookies.set(name, value, hardenCookieOptions(options, sessionOnly));
         }
       },
     },
@@ -31,16 +34,28 @@ export async function proxy(request: NextRequest) {
   //  /login 과 / 사이를 계속 오가게 된다.)
   const { data } = await supabase.auth.getUser();
   const isLoggedIn = Boolean(data.user);
-  const isPublicPath = PUBLIC_PATHS.includes(request.nextUrl.pathname);
+  const isGuest = data.user?.user_metadata?.guest === true;
+  const path = request.nextUrl.pathname;
+  const isAuthPath = AUTH_PATHS.includes(path);
+  const isOpenPath = OPEN_PATHS.includes(path);
 
-  const redirectTo = (path: string) => {
-    const redirectResponse = NextResponse.redirect(new URL(path, request.url));
+  const redirectTo = (target: string) => {
+    const redirectResponse = NextResponse.redirect(new URL(target, request.url));
     for (const cookie of response.cookies.getAll()) redirectResponse.cookies.set(cookie);
     return redirectResponse;
   };
 
-  if (!isLoggedIn && !isPublicPath) return redirectTo("/login");
-  if (isLoggedIn && isPublicPath) return redirectTo("/");
+  if (!isLoggedIn) {
+    if (isAuthPath || isOpenPath) return response;
+    // 링크를 미리 불러오는 요청(prefetch)으로는 게스트 계정을 만들지 않는다. 실제로 눌렀을 때만 만든다.
+    // Next는 proxy에 prefetch 헤더를 넘기지 않고, 미리 읽기 주소(/경로.segments/…)로만 알려 준다. 그래서 헤더와 주소를 둘 다 본다.
+    const purpose = `${request.headers.get("purpose") ?? ""} ${request.headers.get("sec-purpose") ?? ""}`;
+    const isPrefetch =
+      Boolean(request.headers.get("next-router-prefetch")) || purpose.includes("prefetch") || /\.segments?(\/|$)/.test(path);
+    if (isPrefetch) return new NextResponse(null, { status: 204 });
+    return redirectTo(`/guest/start?next=${encodeURIComponent(path + request.nextUrl.search)}`);
+  }
+  if (isAuthPath && !isGuest) return redirectTo("/");
   return response;
 }
 

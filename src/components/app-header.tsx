@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { logOut } from "@/app/(auth)/login/actions";
 import { BrandLogo } from "@/components/brand-logo";
@@ -12,14 +12,23 @@ import { isCurrentNav, NAV_ITEMS } from "@/lib/nav-items";
 // Design Ref: §2.2 — 모든 화면 위쪽에 붙는 공통 머리글. 왼쪽 로고, 가운데 메뉴, 오른쪽 계정.
 // 맑은 흰색 바탕에 살짝 흐림 효과가 있고 스크롤해도 위에 붙어 있다. 휴대폰에서는 "메뉴" 버튼으로 기능 목록이 펼쳐진다.
 // userEmail: undefined = 로그인 여부 확인 중(로고만 표시), null = 로그아웃 상태, 문자열 = 로그인한 사용자.
-export function AppHeader({ userEmail }: { userEmail?: string | null }) {
+export function AppHeader({ userEmail, isGuest = false }: { userEmail?: string | null; isGuest?: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isChecking = userEmail === undefined;
-  const isLoggedIn = typeof userEmail === "string";
+  const isLoggedIn = typeof userEmail === "string"; // 게스트도 로그인된 상태(임시 계정)로 본다
+  const showEmail = isLoggedIn && !isGuest;
 
   // 휴대폰 메뉴는 "열린 화면의 경로"를 기억한다. 다른 화면으로 이동하면 경로가 달라져서 저절로 닫힌다.
   const [menuPath, setMenuPath] = useState<string | null>(null);
   const menuOpen = menuPath === pathname;
+
+  // 홈에서 기능 화면을 눌러 이동하면 게스트 계정이 새로 만들어지는데, 머리글은 이동해도 다시 그려지지 않아 "로그아웃" 모양으로 남는다.
+  // 로그아웃 상태인데 홈·로그인·가입이 아닌 화면에 와 있으면 한 번 새로 읽어 현재 계정 상태로 맞춘다.
+  const needsRefresh = userEmail === null && !["/", "/login", "/signup"].includes(pathname);
+  useEffect(() => {
+    if (needsRefresh) router.refresh();
+  }, [needsRefresh, router]);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -46,16 +55,33 @@ export function AppHeader({ userEmail }: { userEmail?: string | null }) {
             {!isChecking &&
               (isLoggedIn ? (
                 <>
-                  <span className="hidden max-w-[200px] truncate text-muted lg:inline">{userEmail}</span>
-                  <form action={logOut} className="hidden md:block">
-                    <button
-                      type="submit"
-                      className="flex items-center gap-1.5 rounded-lg border border-line px-3.5 py-2 text-foreground/80 transition-colors hover:border-brand hover:text-brand"
-                    >
-                      <Icon name="logout" className="h-4 w-4" />
-                      로그아웃
-                    </button>
-                  </form>
+                  {isGuest ? (
+                    <>
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-200">게스트</span>
+                      <Link href="/login" className="hidden rounded-lg px-3.5 py-2 text-foreground/80 transition-colors hover:text-brand md:block">
+                        로그인
+                      </Link>
+                      <Link
+                        href="/signup"
+                        className="bg-brand-gradient hidden rounded-lg px-4 py-2 font-medium text-white shadow-[0_10px_22px_-10px_var(--brand)] transition-[filter,transform] hover:-translate-y-px hover:brightness-110 md:block"
+                      >
+                        회원가입
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden max-w-[200px] truncate text-muted lg:inline">{userEmail}</span>
+                      <form action={logOut} className="hidden md:block">
+                        <button
+                          type="submit"
+                          className="flex items-center gap-1.5 rounded-lg border border-line px-3.5 py-2 text-foreground/80 transition-colors hover:border-brand hover:text-brand"
+                        >
+                          <Icon name="logout" className="h-4 w-4" />
+                          로그아웃
+                        </button>
+                      </form>
+                    </>
+                  )}
                   <button
                     type="button"
                     className="grid h-10 w-10 place-items-center rounded-lg border border-line text-brand md:hidden"
@@ -107,13 +133,26 @@ export function AppHeader({ userEmail }: { userEmail?: string | null }) {
               </li>
             ))}
           </ul>
-          <form action={logOut} className="mt-6">
-            <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl border border-line py-3 text-sm text-foreground/80">
-              <Icon name="logout" className="h-4 w-4" />
-              로그아웃
-            </button>
-          </form>
-          <p className="mt-4 truncate text-center text-xs text-muted">{userEmail}</p>
+          {isGuest ? (
+            <div className="mt-6 grid grid-cols-2 gap-2">
+              <Link href="/login" onClick={() => setMenuPath(null)} className="rounded-xl border border-line py-3 text-center text-sm text-foreground/80">
+                로그인
+              </Link>
+              <Link href="/signup" onClick={() => setMenuPath(null)} className="bg-brand-gradient rounded-xl py-3 text-center text-sm font-medium text-white">
+                회원가입
+              </Link>
+            </div>
+          ) : (
+            <>
+              <form action={logOut} className="mt-6">
+                <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl border border-line py-3 text-sm text-foreground/80">
+                  <Icon name="logout" className="h-4 w-4" />
+                  로그아웃
+                </button>
+              </form>
+              {showEmail && <p className="mt-4 truncate text-center text-xs text-muted">{userEmail}</p>}
+            </>
+          )}
         </nav>
       )}
       </header>

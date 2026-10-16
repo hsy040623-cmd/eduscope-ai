@@ -1,8 +1,10 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isLoginBlocked, LOGIN_BLOCKED_MESSAGE, recordLoginFailure } from "@/lib/login-throttle";
+import { GUEST_COOKIE } from "@/lib/supabase/cookie-options";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Design Ref: §3.3 — 이메일·비밀번호 로그인과 로그아웃은 모두 서버에서 처리한다.
@@ -43,7 +45,8 @@ export async function logIn(_previous: LoginState, formData: FormData): Promise<
     return { status: "error", fieldErrors, email: rawEmail };
   }
 
-  const supabase = await createSupabaseServerClient({ forwardClientIp: true });
+  // persistent: 게스트 상태에서 로그인해도 계속 보관되는 로그인 쿠키로 만든다.
+  const supabase = await createSupabaseServerClient({ forwardClientIp: true, persistent: true });
 
   // 같은 이메일로 너무 많이 틀렸으면 Supabase에 요청하지 않고 바로 알린다. (이메일이 있는 계정인지와 상관없이 같은 문구)
   if (await isLoginBlocked(supabase, parsed.data.email)) {
@@ -69,11 +72,13 @@ export async function logIn(_previous: LoginState, formData: FormData): Promise<
     };
   }
 
+  (await cookies()).delete(GUEST_COOKIE); // 이제 게스트가 아니다
   redirect("/");
 }
 
 export async function logOut(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut({ scope: "local" }); // 이 기기의 로그인만 끝낸다.
-  redirect("/login");
+  (await cookies()).delete(GUEST_COOKIE);
+  redirect("/");
 }
