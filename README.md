@@ -4,7 +4,8 @@
 
 공공 교육기관의 **홈페이지 주소**나 **교육계획서 PDF**를 AI가 읽어 정해진 항목(교육과정 수, 온라인 교육 형태, 이수기준, 수료율 등)을 **출처와 함께** 정리하고, **2~5개 기관을 표·차트·차이 분석**으로 비교해 주는 교육 담당자용 웹 서비스입니다.
 
-- 배포 주소: 아래 "배포" 항목 참고
+- 배포 주소: https://eduscope-ai.vercel.app
+- 저장소: https://github.com/hsy040623-cmd/eduscope-ai
 - 기획서 [PRD.md](PRD.md) · 설계서 [DESIGN.md](DESIGN.md) · 개발 계획 [PLAN.md](PLAN.md) · 점검 기록 [CHECK.md](CHECK.md) · 정확도 측정 [MEASURE.md](MEASURE.md)
 
 ## 이런 문제를 풉니다
@@ -91,6 +92,12 @@ supabase/       migrations(DB 만들기), tests(DB 규칙 시험 SQL)
 ## 배포
 
 Vercel에 배포합니다. 환경변수 3개(`OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`)만 등록합니다.
+
+```bash
+npx vercel deploy --prod   # Vercel CLI (VERCEL_TOKEN 필요)
+```
+
+`.vercelignore`가 `.env` 같은 비밀 값 파일이 배포 파일에 올라가지 않게 막습니다. 함수 지역은 Supabase와 같은 서울(`icn1`)입니다.
 
 ## 알려진 한계
 
