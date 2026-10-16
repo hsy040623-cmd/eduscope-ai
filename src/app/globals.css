@@ -1,0 +1,273 @@
+@import "tailwindcss";
+
+/* ── 색 체계: 공공·교육기관의 신뢰감을 주는 파란색을 중심으로 한다. 라이트·다크 모두 같은 이름의 값을 쓴다. ── */
+:root {
+  --background: #f4f8ff;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --muted: #475569;
+  --brand: #2563eb;
+  --brand-strong: #1d4ed8;
+  --brand-light: #38bdf8;
+  --brand-soft: #e6efff;
+  --line: #d9e4f7;
+  --gradient-brand: linear-gradient(135deg, #1d4ed8 0%, #2563eb 48%, #0ea5e9 100%);
+  --gradient-page-a: rgba(56, 189, 248, 0.22);
+  --gradient-page-b: rgba(99, 102, 241, 0.14);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-line: var(--line);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #070f1f;
+    --foreground: #e6edfb;
+    --surface: #0e1a31;
+    --muted: #9db0d3;
+    --brand: #5b8def;
+    --brand-strong: #3b82f6;
+    --brand-light: #38bdf8;
+    --brand-soft: #14284d;
+    --line: #1f3358;
+    --gradient-brand: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #0ea5e9 100%);
+    --gradient-page-a: rgba(14, 165, 233, 0.16);
+    --gradient-page-b: rgba(99, 102, 241, 0.16);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  accent-color: var(--brand);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  /* 한글이 깨끗하게 보이도록 한국어 글꼴을 뒤에 둔다. */
+  font-family: var(--font-geist-sans), "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+}
+
+/* 화면 뒤에 은은하게 번지는 파란 빛(시안·인디고). 내용 뒤에 고정되어 스크롤해도 따라온다. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 88% -8%, var(--gradient-page-a), transparent 70%),
+    radial-gradient(760px 520px at -6% 8%, var(--gradient-page-b), transparent 70%);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ── 파란 그라데이션 ── */
+.bg-brand-gradient {
+  background-color: var(--brand);
+  background-image: var(--gradient-brand);
+}
+
+.text-gradient {
+  background-image: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 화면 곳곳의 기본(검정) 버튼·링크 버튼을 파란 그라데이션 버튼으로 통일한다.
+   기존 코드가 `bg-foreground … text-background`로 쓴 주된 버튼이 모두 대상이다. */
+[class~="bg-foreground"][class~="text-background"] {
+  background-color: var(--brand);
+  background-image: var(--gradient-brand);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--brand) 70%, transparent);
+  transition:
+    filter 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+[class~="bg-foreground"][class~="text-background"]:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+/* 색이 들어간 버튼(파란 그라데이션 버튼·링크 버튼, 빨간 삭제 버튼)을 누르는 동안 아주 살짝 커지면서 아래쪽으로 그림자가 진다.
+   scale은 따로 지정해서 기존의 hover 올라오기(transform)와 겹치지 않는다. 비활성 버튼은 움직이지 않는다. */
+[class~="bg-foreground"][class~="text-background"]:is(button, a),
+:is(button, a).bg-brand-gradient,
+.btn-red {
+  transition:
+    filter 0.2s,
+    transform 0.2s,
+    background-color 0.2s,
+    box-shadow 0.14s ease-out,
+    scale 0.14s ease-out;
+}
+
+[class~="bg-foreground"][class~="text-background"]:is(button, a):active:not(:disabled),
+:is(button, a).bg-brand-gradient:active:not(:disabled),
+.btn-red:active:not(:disabled) {
+  scale: 1.04;
+}
+
+[class~="bg-foreground"][class~="text-background"]:is(button, a):active:not(:disabled),
+:is(button, a).bg-brand-gradient:active:not(:disabled) {
+  box-shadow: 0 14px 20px -8px color-mix(in srgb, var(--brand-strong) 80%, transparent);
+  filter: brightness(0.97);
+  animation: none; /* 숨 쉬는 빛 모션(첫 화면 시작 버튼)보다 눌림 그림자가 우선한다 */
+}
+
+.btn-red:active:not(:disabled) {
+  box-shadow: 0 14px 20px -8px rgba(220, 38, 38, 0.55);
+}
+
+/* ── 모션 ── */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes glow-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(24px, -18px) scale(1.08);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delay {
+  animation: float 7s ease-in-out -2.5s infinite;
+}
+
+.animate-bar-grow {
+  transform-origin: bottom;
+  animation: bar-grow 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; /* 첫 화면 오른쪽 그래프: 1.1초 → 1.6초로 0.5초 느리게 */
+}
+
+.animate-glow-drift {
+  animation: glow-drift 14s ease-in-out infinite;
+}
+
+/* 스크롤해서 화면에 보이면 떠오르며 나타난다. (Reveal 컴포넌트가 data-in을 붙인다) */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 0.75s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.75s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--rd, 0s);
+}
+.reveal[data-in="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* 첫 화면 큰 제목의 파란 글자에서 빛이 천천히 흐른다. */
+@keyframes shimmer {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 200% 50%;
+  }
+}
+.text-gradient.animate-shimmer {
+  background-image: linear-gradient(100deg, #1d4ed8 0%, #0ea5e9 25%, #1d4ed8 50%, #0ea5e9 75%, #1d4ed8 100%);
+  background-size: 200% 100%;
+  animation: shimmer 7s linear infinite;
+}
+
+/* 시작 버튼 주위의 빛이 천천히 숨 쉬듯 커졌다 작아진다. */
+@keyframes cta-glow {
+  0%,
+  100% {
+    box-shadow: 0 18px 34px -14px var(--brand);
+  }
+  50% {
+    box-shadow: 0 22px 44px -10px var(--brand);
+  }
+}
+.animate-cta-glow {
+  animation: cta-glow 3.4s ease-in-out infinite;
+}
+
+/* 움직임을 줄이도록 설정한 사람에게는 떠다니는 모션과 화면 전환 모션을 끈다. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-fade-up,
+  .animate-float,
+  .animate-float-delay,
+  .animate-bar-grow,
+  .animate-glow-drift,
+  .animate-cta-glow,
+  .text-gradient.animate-shimmer {
+    animation: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
